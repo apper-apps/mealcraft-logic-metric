@@ -23,11 +23,11 @@ export default function MealsList({ className }) {
   const [editingMeal, setEditingMeal] = useState(null)
   const [activeId, setActiveId] = useState(null)
   
-  // Configure drag sensors with accessibility support
+// Configure drag sensors with accessibility support and mobile-friendly touch handling
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 12, // Increased for better touch handling on mobile
       },
     }),
     useSensor(KeyboardSensor, {
@@ -187,21 +187,23 @@ const filteredMeals = meals.filter(meal => {
     );
   }
 
-  return (
-    <div className={`space-y-6 ${className}`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold gradient-text">Meal Library</h2>
-        <Button onClick={handleAddMeal} variant="primary">
+return (
+    <div className={`space-y-4 md:space-y-6 ${className}`}>
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-xl md:text-2xl font-bold gradient-text">Meal Library</h2>
+        <Button onClick={handleAddMeal} variant="primary" className="w-full sm:w-auto">
           <ApperIcon name="Plus" size={16} className="mr-2" />
           Add Meal
         </Button>
       </div>
 
+      {/* Search - Mobile optimized */}
       <Input
         placeholder="Search meals..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="max-w-md"
+        className="w-full max-w-md"
       />
 
       {filteredMeals.length === 0 ? (
@@ -212,7 +214,7 @@ const filteredMeals = meals.filter(meal => {
           onAction={handleAddMeal}
         />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -224,7 +226,8 @@ const filteredMeals = meals.filter(meal => {
             items={filteredMeals.map(meal => meal.Id.toString())}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-3">
+            {/* Mobile-first responsive grid layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
               <AnimatePresence>
                 {filteredMeals.map((meal, index) => (
                   <DraggableMeal

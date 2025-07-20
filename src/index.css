@@ -91,14 +91,28 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 1rem;
 }
-
 @media (max-width: 768px) {
   .calendar-grid {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
+  
+  /* Enhanced mobile touch targets for meals */
+  .premium-card {
+    @apply min-h-[80px] touch-manipulation;
+    padding: 1rem;
+  }
+  
+  /* Better mobile interaction for meal cards */
+  .meal-card-hover {
+    @apply hover:scale-100 active:scale-95 transition-transform duration-150;
+  }
+  
+  /* Optimized drag interaction for mobile */
+  .drag-item {
+    @apply touch-pan-y;
+  }
 }
-
 /* Shimmer Loading */
 .shimmer {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
