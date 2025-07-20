@@ -1,25 +1,41 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
-import Input from "@/components/atoms/Input";
-import MealCard from "@/components/molecules/MealCard";
-import MealFormModal from "@/components/organisms/MealFormModal";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import MealFormModal from "@/components/organisms/MealFormModal";
+import MealCard from "@/components/molecules/MealCard";
+import Input from "@/components/atoms/Input";
+import Button from "@/components/atoms/Button";
 import { mealService } from "@/services/api/mealService";
 
-const MealsList = ({ className = "" }) => {
-  const [meals, setMeals] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showMealForm, setShowMealForm] = useState(false);
-  const [editingMeal, setEditingMeal] = useState(null);
-
+export default function MealsList({ className }) {
+  const [meals, setMeals] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingMeal, setEditingMeal] = useState(null)
+  const [activeId, setActiveId] = useState(null)
+  
+  // Configure drag sensors with accessibility support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+  
+  // Load meals from API
   useEffect(() => {
     loadMeals();
   }, []);
@@ -38,18 +54,18 @@ const MealsList = ({ className = "" }) => {
     }
   };
 
-  const handleAddMeal = () => {
+const handleAddMeal = () => {
     setEditingMeal(null);
-    setShowMealForm(true);
+    setIsModalOpen(true);
   };
 
   const handleEditMeal = (meal) => {
     setEditingMeal(meal);
-    setShowMealForm(true);
+    setIsModalOpen(true);
   };
 
   const handleDeleteMeal = async (meal) => {
-    if (!confirm(`Are you sure you want to delete "${meal.name}"?`)) return;
+    if (!confirm(`Are you sure you want to delete "${meal.Name}"?`)) return;
     
     try {
       await mealService.delete(meal.Id);
@@ -72,21 +88,82 @@ const MealsList = ({ className = "" }) => {
         setMeals([newMeal, ...meals]);
         toast.success("Meal added successfully!");
       }
-      setShowMealForm(false);
+      setIsModalOpen(false);
       setEditingMeal(null);
     } catch (err) {
-      toast.error(`Failed to ${editingMeal ? "update" : "add"} meal`);
+      toast.error("Failed to save meal");
       console.error(err);
     }
   };
 
+  // Drag handlers
+  function handleDragStart(event) {
+    setActiveId(event.active.id)
+  }
+  
+  function handleDragEnd(event) {
+    setActiveId(null)
+    // Meals list is read-only for dragging, no reordering needed
+  }
+  
+  function handleDragCancel() {
+    setActiveId(null)
+  }
+  
+  // Filter meals based on search
   const filteredMeals = meals.filter(meal =>
-    meal.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (meal.tags && meal.tags.some(tag => 
-      tag.toLowerCase().includes(searchTerm.toLowerCase())
-    ))
-  );
-
+    meal.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meal.Category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meal.Ingredients.some(ingredient => 
+      ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  )
+  
+  // Create draggable component for meal cards
+  function DraggableMeal({ meal, index }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({
+      id: meal.Id.toString(),
+      data: {
+        type: 'meal',
+        meal,
+      },
+    })
+    
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
+    
+    return (
+      <motion.div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ delay: index * 0.05 }}
+        className={`group ${isDragging ? "drag-preview" : ""}`}
+      >
+        <MealCard
+          meal={meal}
+          onEdit={handleEditMeal}
+          onDelete={handleDeleteMeal}
+          isDragging={isDragging}
+          className="drag-item"
+        />
+      </motion.div>
+    )
+}
+  
   if (loading) {
     return <Loading variant="mealList" className={className} />;
   }
@@ -125,66 +202,65 @@ const MealsList = ({ className = "" }) => {
           message={searchTerm ? "Try adjusting your search terms" : "Start building your meal library"}
           actionLabel="Add Your First Meal"
           onAction={handleAddMeal}
-          icon="UtensilsCrossed"
         />
       ) : (
-        <Droppable droppableId="meals-list" isDropDisabled={true}>
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="space-y-3"
-            >
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <SortableContext
+            items={filteredMeals.map(meal => meal.Id.toString())}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
               <AnimatePresence>
                 {filteredMeals.map((meal, index) => (
-                  <Draggable 
-                    key={meal.Id} 
-                    draggableId={meal.Id.toString()} 
+                  <DraggableMeal
+                    key={meal.Id}
+                    meal={meal}
                     index={index}
-                  >
-                    {(provided, snapshot) => (
-                      <motion.div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={`group ${snapshot.isDragging ? "drag-preview" : ""}`}
-                      >
-                        <MealCard
-                          meal={meal}
-                          onEdit={handleEditMeal}
-                          onDelete={handleDeleteMeal}
-                          isDragging={snapshot.isDragging}
-                          className="drag-item"
-                        />
-                      </motion.div>
-                    )}
-                  </Draggable>
+                  />
                 ))}
               </AnimatePresence>
-              {provided.placeholder}
             </div>
-          )}
-        </Droppable>
+          </SortableContext>
+          
+          <DragOverlay>
+            {activeId ? (
+              <div className="drag-preview">
+                {(() => {
+                  const meal = meals.find(m => m.Id.toString() === activeId)
+                  return meal ? (
+                    <MealCard
+                      meal={meal}
+                      onEdit={() => {}}
+                      onDelete={() => {}}
+                      isDragging={true}
+                      className="drag-item"
+                    />
+                  ) : null
+                })()}
+              </div>
+            ) : null}
+          </DragOverlay>
+</DndContext>
+        </div>
       )}
 
-      <AnimatePresence>
-        {showMealForm && (
-          <MealFormModal
-            meal={editingMeal}
-            onSave={handleSaveMeal}
-            onClose={() => {
-              setShowMealForm(false);
-              setEditingMeal(null);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {isModalOpen && (
+        <MealFormModal
+          meal={editingMeal}
+          onSave={handleSaveMeal}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingMeal(null);
+          }}
+        />
+      )}
     </div>
   );
-};
-
-export default MealsList;
+}

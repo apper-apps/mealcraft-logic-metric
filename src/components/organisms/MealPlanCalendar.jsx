@@ -1,37 +1,42 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import ApperIcon from "@/components/ApperIcon";
-import WeekNavigation from "@/components/molecules/WeekNavigation";
-import MealSlot from "@/components/molecules/MealSlot";
-import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import { getWeekStart, getWeekDays, formatDate, getPreviousWeek, getNextWeek, dateToString } from "@/utils/date";
+import Loading from "@/components/ui/Loading";
+import MealSlot from "@/components/molecules/MealSlot";
+import WeekNavigation from "@/components/molecules/WeekNavigation";
 import { weekPlanService } from "@/services/api/weekPlanService";
+import { dateToString, formatDate, getNextWeek, getPreviousWeek, getWeekDays, getWeekStart } from "@/utils/date";
 
-const MEAL_TYPES = ["breakfast", "lunch", "dinner"];
-
-const MealPlanCalendar = ({ 
-  meals = [], 
-  currentWeek, 
-  onWeekChange,
-  className = "" 
-}) => {
-  const [weekPlan, setWeekPlan] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
+  const [weekPlan, setWeekPlan] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [activeId, setActiveId] = useState(null)
   
-  const weekDays = getWeekDays(currentWeek);
-
-  useEffect(() => {
-    loadWeekPlan();
-  }, [currentWeek]);
-
+  const MEAL_TYPES = ["breakfast", "lunch", "dinner"]
+  
+  // Configure drag sensors with accessibility support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+  
+  // Load week plan data
   const loadWeekPlan = async () => {
     try {
       setLoading(true);
-      setError("");
+      setError(null);
       const plan = await weekPlanService.getWeekPlan(currentWeek);
       setWeekPlan(plan);
     } catch (err) {
@@ -42,35 +47,56 @@ const MealPlanCalendar = ({
     }
   };
 
-  const getMealForSlot = (date, mealType) => {
+  useEffect(() => {
+    loadWeekPlan();
+  }, [currentWeek]);
+const getMealForSlot = (date, mealType) => {
     if (!weekPlan?.meals) return null;
     const dateString = dateToString(date);
     const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
     if (!dayMeals || !dayMeals[mealType]) return null;
-    
-    const mealId = parseInt(dayMeals[mealType]);
-    return meals.find(m => m.Id === mealId) || null;
+    return dayMeals[mealType];
   };
 
-  const handleDragEnd = async (result) => {
-    const { destination, source, draggableId } = result;
+  // Handle drag start
+  function handleDragStart(event) {
+    setActiveId(event.active.id)
+  }
+  
+  // Handle drag and drop
+  async function handleDragEnd(event) {
+    const { active, over } = event
     
-    if (!destination) return;
+    setActiveId(null)
     
-    // Parse destination
-    const [destDate, destMealType] = destination.droppableId.split("-");
-    const mealId = parseInt(draggableId);
+    if (!over) return
+    
+    // Parse the droppable ID to get date and meal type
+    const [date, mealType] = over.id.split('-')
+    const mealId = parseInt(active.id)
+    
+    // Don't do anything if dropped on same slot that already contains this meal
+    const currentMeal = getMealForSlot(date, mealType)
+    if (currentMeal && currentMeal.Id === mealId) {
+      return
+    }
     
     try {
-      const updatedPlan = await weekPlanService.assignMeal(currentWeek, destDate, destMealType, mealId);
-      setWeekPlan(updatedPlan);
-      toast.success("Meal assigned successfully!");
-    } catch (err) {
-      toast.error("Failed to assign meal");
-      console.error(err);
+      const updatedPlan = await weekPlanService.addMealToPlan(currentWeek, date, mealType, mealId)
+      setWeekPlan(updatedPlan)
+      toast.success('Meal added to plan!')
+    } catch (error) {
+      console.error('Error adding meal to plan:', error)
+      toast.error('Failed to add meal to plan')
     }
-  };
-
+  }
+  
+  // Handle drag cancel
+  function handleDragCancel() {
+    setActiveId(null)
+  }
+  
+  // Remove meal from plan
   const handleRemoveMeal = async (date, mealType) => {
     try {
       const dateString = dateToString(date);
@@ -95,8 +121,8 @@ const MealPlanCalendar = ({
     onWeekChange(getWeekStart(new Date()));
   };
 
-  if (loading) {
-    return <Loading variant="calendar" className={className} />;
+if (loading) {
+    return <Loading variant="calendar" />;
   }
 
   if (error) {
@@ -105,72 +131,115 @@ const MealPlanCalendar = ({
         title="Calendar Error"
         message={error}
         onRetry={loadWeekPlan}
-        className={className}
       />
     );
   }
 
-  return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div className={`space-y-6 ${className}`}>
-        <WeekNavigation
-          currentWeek={currentWeek}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
-          onToday={handleToday}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-          {weekDays.map((day, dayIndex) => (
-            <motion.div
-              key={day.toISOString()}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: dayIndex * 0.05 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <div className="text-center mb-4">
-                <h3 className="font-semibold text-gray-900">
-                  {formatDate(day, "EEEE")}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {formatDate(day)}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {MEAL_TYPES.map((mealType) => {
-                  const dateString = dateToString(day);
-                  const droppableId = `${dateString}-${mealType}`;
-                  const meal = getMealForSlot(day, mealType);
-
-                  return (
-                    <Droppable key={droppableId} droppableId={droppableId}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className="group"
-                        >
-                          <MealSlot
-                            mealType={mealType}
-                            meal={meal}
-                            onRemove={() => handleRemoveMeal(day, mealType)}
-                            isDropTarget={snapshot.isDraggingOver}
-                          />
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+  // Create droppable component for meal slots
+  function DroppableSlot({ id, children, className }) {
+    const {
+      setNodeRef,
+      isOver,
+    } = useSortable({
+      id,
+      data: {
+        type: 'droppable',
+      },
+    })
+    
+    return (
+      <div
+        ref={setNodeRef}
+        className={`${className} ${isOver ? 'drop-zone-active' : ''}`}
+      >
+        {children}
       </div>
-    </DragDropContext>
-  );
-};
+    )
+  }
 
-export default MealPlanCalendar;
+  return (
+    <div className="space-y-6">
+      <WeekNavigation
+        currentWeek={currentWeek}
+        onPrevious={handlePreviousWeek}
+        onNext={handleNextWeek}
+        onToday={handleToday}
+      />
+      
+      {loading && <Loading />}
+      {error && <Error message={error} onRetry={loadWeekPlan} />}
+      
+      {!loading && !error && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <div className="calendar-grid">
+            {getWeekDays(currentWeek).map((day) => {
+              const dateString = formatDate(day)
+              
+              return (
+                <motion.div
+                  key={dateString}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+                >
+                  <div className="text-center mb-4">
+                    <h3 className="font-semibold text-gray-900">
+                      {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {MEAL_TYPES.map((mealType) => {
+                      const meal = getMealForSlot(day, mealType);
+                      const droppableId = `${dateString}-${mealType}`;
+                      
+                      return (
+                        <SortableContext
+                          key={droppableId}
+                          id={droppableId}
+                          items={[]}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <DroppableSlot
+                            id={droppableId}
+                            className="group"
+                          >
+                            <MealSlot
+                              mealType={mealType}
+                              meal={meal}
+                              onRemove={() => handleRemoveMeal(day, mealType)}
+                              isDropTarget={false}
+                            />
+                          </DroppableSlot>
+                        </SortableContext>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+          
+          <DragOverlay>
+            {activeId ? (
+              <div className="drag-preview">
+                <div className="bg-white rounded-lg p-3 shadow-lg border">
+                  <ApperIcon name="move" className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+    </div>
+  )
+}
