@@ -32,11 +32,11 @@ const CalendarPage = () => {
         <h1 className="text-4xl font-bold gradient-text mb-2">Weekly Meal Planner</h1>
         <p className="text-gray-600">
           Drag meals from your library to plan the perfect week
-        </p>
+</p>
       </div>
 
-<div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        <div className="xl:col-span-2 2xl:col-span-3 2xl:col-start-1">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+        <div className="xl:col-span-2 order-2 xl:order-1">
           <MealPlanCalendar 
             meals={meals}
             currentWeek={currentWeek}
@@ -44,9 +44,9 @@ const CalendarPage = () => {
           />
         </div>
         
-        <div className="xl:col-span-2 2xl:col-span-1 2xl:col-start-4">
+        <div className="xl:col-span-1 order-1 xl:order-2">
           <div className="sticky top-6">
-            <MealsList />
+            <MealsList className="h-fit" />
           </div>
         </div>
       </div>

@@ -188,11 +188,11 @@ const filteredMeals = meals.filter(meal => {
   }
 
 return (
-    <div className={`space-y-4 md:space-y-6 ${className}`}>
+    <div className={`space-y-5 md:space-y-6 ${className}`}>
       {/* Header - Mobile optimized */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-xl md:text-2xl font-bold gradient-text">Meal Library</h2>
-        <Button onClick={handleAddMeal} variant="primary" className="w-full sm:w-auto">
+        <Button onClick={handleAddMeal} variant="primary" className="w-full sm:w-auto shrink-0">
           <ApperIcon name="Plus" size={16} className="mr-2" />
           Add Meal
         </Button>
@@ -203,7 +203,7 @@ return (
         placeholder="Search meals..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full max-w-md"
+        className="w-full"
       />
 
       {filteredMeals.length === 0 ? (
@@ -214,7 +214,7 @@ return (
           onAction={handleAddMeal}
         />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -226,8 +226,8 @@ return (
             items={filteredMeals.map(meal => meal.Id.toString())}
             strategy={verticalListSortingStrategy}
           >
-            {/* Mobile-first responsive grid layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
+            {/* Single column layout optimized for drag and drop */}
+            <div className="grid grid-cols-1 gap-4 md:gap-5">
               <AnimatePresence>
                 {filteredMeals.map((meal, index) => (
                   <DraggableMeal

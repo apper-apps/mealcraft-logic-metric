@@ -113,11 +113,10 @@
     gap: 1rem;
   }
 }
-
 @media (max-width: 768px) {
   /* Enhanced mobile touch targets for meals */
   .premium-card {
-    @apply min-h-[80px] touch-manipulation;
+    @apply min-h-[88px] touch-manipulation;
     padding: 1rem;
   }
   
@@ -130,6 +129,23 @@
   .drag-item {
     @apply touch-pan-y;
   }
+  
+  /* Improved meal library spacing on mobile */
+  .space-y-5 > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Enhanced spacing for meal library */
+.premium-card {
+  @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  min-height: 120px;
+}
+
+/* Better drop zone visibility */
+.drop-zone-active {
+  @apply bg-gradient-to-br from-secondary/15 to-accent/15 border-secondary border-2 border-dashed shadow-lg;
+  transform: scale(1.02);
 }
 /* Shimmer Loading */
 .shimmer {
