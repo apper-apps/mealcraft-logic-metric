@@ -1,51 +1,44 @@
+import React from "react";
 import { motion } from "framer-motion";
 import ApperIcon from "@/components/ApperIcon";
 import { getMealTypeLabel } from "@/utils/mealUtils";
 
-const MealSlot = ({ 
-  mealType, 
-  meal, 
-  onRemove,
-  isDropTarget = false,
-  className = "",
-  ...props 
-}) => {
+export default function MealSlot({ mealType, meal, onRemove, onClick, isDropTarget = false }) {
   const isEmpty = !meal;
   
   return (
-    <motion.div
-      layout
+    <div
       className={`
-        relative rounded-xl p-3 transition-all duration-200 min-h-[80px] flex flex-col
-        ${isEmpty ? "empty-slot" : "premium-card"}
-        ${isDropTarget ? "drop-zone-active" : ""}
-        ${className}
+        min-h-[80px] rounded-lg border-2 transition-all duration-200 group
+        ${meal 
+          ? 'bg-white border-gray-200 hover:border-secondary/30 hover:shadow-sm' 
+          : 'border-dashed border-gray-300 bg-gray-50/50 hover:border-secondary hover:bg-secondary/5 empty-slot cursor-pointer'
+        }
+        ${isDropTarget ? 'drop-zone-active' : ''}
       `}
-      {...props}
+      onClick={!meal ? onClick : undefined}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-          {getMealTypeLabel(mealType)}
-        </span>
-        {!isEmpty && onRemove && (
+      {meal && (
+        <div className="absolute top-2 right-2">
           <button
             onClick={() => onRemove(mealType)}
             className="p-1 text-gray-400 hover:text-error transition-colors opacity-0 group-hover:opacity-100"
           >
             <ApperIcon name="X" size={12} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
       
       {isEmpty ? (
-        <div className="flex-1 flex items-center justify-center text-gray-400">
-          <div className="text-center">
-            <ApperIcon name="Plus" size={20} className="mx-auto mb-1" />
-            <p className="text-xs">Drop meal here</p>
-          </div>
+        <div className="h-full flex flex-col items-center justify-center p-3 text-center">
+          <ApperIcon name="Plus" size={20} className="text-gray-400 mb-2" />
+          <p className="text-sm font-medium text-gray-500 capitalize">
+            {getMealTypeLabel(mealType)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Click to add or drop meal here</p>
         </div>
       ) : (
-        <div className="flex-1">
+        <div className="p-3 h-full flex flex-col">
           <h4 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
             {meal.name}
           </h4>
@@ -53,13 +46,10 @@ const MealSlot = ({
             <ApperIcon name="Clock" size={12} className="mr-1" />
             {meal.prepTime}m
             <span className="mx-2">•</span>
-            <ApperIcon name="Users" size={12} className="mr-1" />
-            {meal.servings}
+            <span>{meal.calories} cal</span>
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
-};
-
-export default MealSlot;
+}

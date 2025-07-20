@@ -8,6 +8,7 @@ import ApperIcon from "@/components/ApperIcon";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
 import MealSlot from "@/components/molecules/MealSlot";
+import MealSelectorModal from "@/components/organisms/MealSelectorModal";
 import WeekNavigation from "@/components/molecules/WeekNavigation";
 import { weekPlanService } from "@/services/api/weekPlanService";
 import { dateToString, formatDate, getNextWeek, getPreviousWeek, getWeekDays, getWeekStart } from "@/utils/date";
@@ -17,6 +18,8 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeId, setActiveId] = useState(null)
+  const [isMealSelectorOpen, setIsMealSelectorOpen] = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState({ date: null, mealType: null })
   
   const MEAL_TYPES = ["breakfast", "lunch", "dinner"]
   
@@ -125,6 +128,34 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
       toast.error("Failed to remove meal");
       console.error(err);
     }
+};
+
+  // Handle meal slot click for empty slots
+  const handleSlotClick = (date, mealType) => {
+    const meal = getMealForSlot(date, mealType);
+    if (!meal) {
+      setSelectedSlot({ date, mealType });
+      setIsMealSelectorOpen(true);
+    }
+  };
+
+  // Handle meal selection from modal
+  const handleMealSelected = async (meal) => {
+    if (!selectedSlot.date || !selectedSlot.mealType) return;
+    
+    try {
+      const mealId = meal.Id || meal.id;
+      const updatedPlan = await weekPlanService.addMealToPlan(
+        currentWeek, 
+        selectedSlot.date, 
+        selectedSlot.mealType, 
+        mealId
+      );
+      setWeekPlan(updatedPlan);
+    } catch (error) {
+      console.error('Error adding meal to plan:', error);
+      toast.error('Failed to add meal to plan');
+    }
   };
 
   const handlePreviousWeek = () => {
@@ -138,7 +169,6 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
   const handleToday = () => {
     onWeekChange(getWeekStart(new Date()));
   };
-
 if (loading) {
     return <Loading variant="calendar" />;
   }
@@ -231,10 +261,11 @@ if (loading) {
                             id={droppableId}
                             className="group"
                           >
-                            <MealSlot
+<MealSlot
                               mealType={mealType}
                               meal={meal}
                               onRemove={() => handleRemoveMeal(day, mealType)}
+                              onClick={() => handleSlotClick(day, mealType)}
                               isDropTarget={false}
                             />
                           </DroppableSlot>
@@ -255,9 +286,20 @@ if (loading) {
                 </div>
               </div>
             ) : null}
-          </DragOverlay>
+</DragOverlay>
         </DndContext>
       )}
+      
+      <MealSelectorModal
+        isOpen={isMealSelectorOpen}
+        onClose={() => {
+          setIsMealSelectorOpen(false);
+          setSelectedSlot({ date: null, mealType: null });
+        }}
+        onSelectMeal={handleMealSelected}
+        date={selectedSlot.date}
+        mealType={selectedSlot.mealType}
+      />
     </div>
   )
 }
