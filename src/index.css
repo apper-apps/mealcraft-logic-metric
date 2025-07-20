@@ -141,13 +141,11 @@
   @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
   min-height: 120px;
 }
-
-/* Better drop zone visibility */
-.drop-zone-active {
-  @apply bg-gradient-to-br from-secondary/15 to-accent/15 border-secondary border-2 border-dashed shadow-lg;
-  transform: scale(1.02);
+.empty-slot {
+  @apply h-32 flex items-center justify-center text-muted-foreground;
+  @apply bg-gradient-to-br from-secondary/[0.15] to-accent/[0.15] border-secondary border-2 border-dashed shadow-lg;
+  @apply rounded-lg transition-all duration-200 hover:border-secondary/70;
 }
-/* Shimmer Loading */
 .shimmer {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200px 100%;
