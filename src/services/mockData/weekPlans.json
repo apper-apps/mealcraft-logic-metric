@@ -1,0 +1,50 @@
+[
+  {
+    "Id": 1,
+    "weekStart": "2024-01-21",
+    "meals": [
+      {
+        "date": "2024-01-21",
+        "breakfast": "4",
+        "lunch": "1",
+        "dinner": "2"
+      },
+      {
+        "date": "2024-01-22",
+        "breakfast": null,
+        "lunch": "6",
+        "dinner": "5"
+      },
+      {
+        "date": "2024-01-23",
+        "breakfast": "4",
+        "lunch": "3",
+        "dinner": "1"
+      },
+      {
+        "date": "2024-01-24",
+        "breakfast": null,
+        "lunch": "2",
+        "dinner": "5"
+      },
+      {
+        "date": "2024-01-25",
+        "breakfast": "4",
+        "lunch": "6",
+        "dinner": "3"
+      },
+      {
+        "date": "2024-01-26",
+        "breakfast": null,
+        "lunch": "1",
+        "dinner": "2"
+      },
+      {
+        "date": "2024-01-27",
+        "breakfast": "4",
+        "lunch": "3",
+        "dinner": "5"
+      }
+    ]
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "Id": 1,
+    "name": "Grilled Chicken Salad",
+    "ingredients": [
+      { "name": "Chicken breast", "quantity": 2, "unit": "pieces" },
+      { "name": "Mixed greens", "quantity": 4, "unit": "cups" },
+      { "name": "Cherry tomatoes", "quantity": 1, "unit": "cups" },
+      { "name": "Cucumber", "quantity": 1, "unit": "pieces" },
+      { "name": "Olive oil", "quantity": 2, "unit": "tbsp" },
+      { "name": "Lemon juice", "quantity": 1, "unit": "tbsp" }
+    ],
+    "prepTime": 25,
+    "servings": 2,
+    "tags": ["healthy", "protein", "low-carb"],
+    "notes": "Season chicken with salt, pepper, and herbs before grilling.",
+    "createdAt": "2024-01-15T10:00:00Z"
+  },
+  {
+    "Id": 2,
+    "name": "Spaghetti Carbonara",
+    "ingredients": [
+      { "name": "Spaghetti", "quantity": 12, "unit": "oz" },
+      { "name": "Bacon", "quantity": 6, "unit": "slices" },
+      { "name": "Eggs", "quantity": 3, "unit": "pieces" },
+      { "name": "Parmesan cheese", "quantity": 1, "unit": "cups" },
+      { "name": "Black pepper", "quantity": 1, "unit": "tsp" },
+      { "name": "Garlic", "quantity": 2, "unit": "cloves" }
+    ],
+    "prepTime": 20,
+    "servings": 4,
+    "tags": ["pasta", "comfort food", "quick"],
+    "notes": "Remove from heat before adding eggs to prevent scrambling.",
+    "createdAt": "2024-01-16T14:30:00Z"
+  },
+  {
+    "Id": 3,
+    "name": "Vegetable Stir Fry",
+    "ingredients": [
+      { "name": "Broccoli", "quantity": 2, "unit": "cups" },
+      { "name": "Bell peppers", "quantity": 2, "unit": "pieces" },
+      { "name": "Carrots", "quantity": 2, "unit": "pieces" },
+      { "name": "Soy sauce", "quantity": 3, "unit": "tbsp" },
+      { "name": "Ginger", "quantity": 1, "unit": "tbsp" },
+      { "name": "Garlic", "quantity": 3, "unit": "cloves" },
+      { "name": "Sesame oil", "quantity": 1, "unit": "tbsp" }
+    ],
+    "prepTime": 15,
+    "servings": 3,
+    "tags": ["vegetarian", "quick", "asian"],
+    "notes": "Keep vegetables crisp by not overcooking.",
+    "createdAt": "2024-01-17T09:15:00Z"
+  },
+  {
+    "Id": 4,
+    "name": "Pancakes",
+    "ingredients": [
+      { "name": "All-purpose flour", "quantity": 2, "unit": "cups" },
+      { "name": "Milk", "quantity": 1.5, "unit": "cups" },
+      { "name": "Eggs", "quantity": 2, "unit": "pieces" },
+      { "name": "Sugar", "quantity": 2, "unit": "tbsp" },
+      { "name": "Baking powder", "quantity": 2, "unit": "tsp" },
+      { "name": "Butter", "quantity": 4, "unit": "tbsp" },
+      { "name": "Vanilla extract", "quantity": 1, "unit": "tsp" }
+    ],
+    "prepTime": 30,
+    "servings": 4,
+    "tags": ["breakfast", "sweet", "family-friendly"],
+    "notes": "Don't overmix the batter to keep pancakes fluffy.",
+    "createdAt": "2024-01-18T07:45:00Z"
+  },
+  {
+    "Id": 5,
+    "name": "Beef Tacos",
+    "ingredients": [
+      { "name": "Ground beef", "quantity": 1, "unit": "lbs" },
+      { "name": "Taco shells", "quantity": 12, "unit": "pieces" },
+      { "name": "Lettuce", "quantity": 2, "unit": "cups" },
+      { "name": "Tomatoes", "quantity": 2, "unit": "pieces" },
+      { "name": "Cheese", "quantity": 1, "unit": "cups" },
+      { "name": "Onion", "quantity": 1, "unit": "pieces" },
+      { "name": "Taco seasoning", "quantity": 1, "unit": "packages" }
+    ],
+    "prepTime": 20,
+    "servings": 4,
+    "tags": ["mexican", "family-friendly", "quick"],
+    "notes": "Brown the beef thoroughly and drain excess fat.",
+    "createdAt": "2024-01-19T18:20:00Z"
+  },
+  {
+    "Id": 6,
+    "name": "Caesar Salad",
+    "ingredients": [
+      { "name": "Romaine lettuce", "quantity": 2, "unit": "bunches" },
+      { "name": "Parmesan cheese", "quantity": 0.5, "unit": "cups" },
+      { "name": "Croutons", "quantity": 1, "unit": "cups" },
+      { "name": "Caesar dressing", "quantity": 0.5, "unit": "cups" },
+      { "name": "Lemon juice", "quantity": 1, "unit": "tbsp" },
+      { "name": "Anchovy paste", "quantity": 1, "unit": "tsp" }
+    ],
+    "prepTime": 10,
+    "servings": 4,
+    "tags": ["salad", "quick", "classic"],
+    "notes": "Chill the lettuce before serving for best results.",
+    "createdAt": "2024-01-20T12:00:00Z"
+  }
+]

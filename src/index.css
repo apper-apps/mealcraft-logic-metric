@@ -1,0 +1,107 @@
+@import "react-toastify/dist/ReactToastify.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  body {
+    @apply font-body text-gray-900 bg-background antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+  
+  .premium-card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .meal-card-hover {
+    @apply hover:scale-105 hover:shadow-lg transition-all duration-200;
+  }
+  
+  .drag-preview {
+    @apply opacity-80 rotate-3 scale-105 shadow-2xl;
+  }
+  
+  .drop-zone-active {
+    @apply bg-gradient-to-br from-secondary/10 to-accent/10 border-secondary border-2 border-dashed;
+  }
+  
+  .empty-slot {
+    @apply border-2 border-dashed border-gray-300 bg-gray-50/50 hover:border-secondary hover:bg-secondary/5 transition-all duration-200;
+  }
+}
+
+/* Custom Toastify Styling */
+.Toastify__toast-container {
+  @apply z-[9999];
+}
+
+.Toastify__toast {
+  @apply text-sm rounded-lg shadow-lg;
+}
+
+.Toastify__toast--success {
+  @apply bg-success text-white;
+}
+
+.Toastify__toast--error {
+  @apply bg-error text-white;
+}
+
+.Toastify__toast--warning {
+  @apply bg-warning text-white;
+}
+
+.Toastify__toast--info {
+  @apply bg-info text-white;
+}
+
+/* Drag and Drop Styling */
+.drag-item {
+  @apply cursor-grab;
+}
+
+.drag-item:active {
+  @apply cursor-grabbing;
+}
+
+.drag-ghost {
+  @apply opacity-60 transform rotate-2 scale-105;
+}
+
+/* Calendar Grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .calendar-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* Shimmer Loading */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
