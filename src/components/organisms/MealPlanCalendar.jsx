@@ -32,7 +32,7 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
     })
   )
   
-  // Load week plan data
+// Load week plan data
   const loadWeekPlan = async () => {
     try {
       setLoading(true);
@@ -47,47 +47,65 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
     }
   };
 
+  // Get meal for specific slot
+  function getMealForSlot(date, mealType) {
+    if (!weekPlan?.meals || !meals) return null;
+    
+    const dateString = dateToString(date);
+    const dayMeals = weekPlan.meals[dateString];
+    if (!dayMeals || typeof dayMeals !== 'object') return null;
+    
+    const mealId = dayMeals[mealType];
+    if (!mealId) return null;
+    
+    const foundMeal = meals.find(meal => meal?.Id === mealId || meal?.id === mealId);
+    return foundMeal || null;
+  }
+
+  // Load week plan on component mount and week change
   useEffect(() => {
     loadWeekPlan();
   }, [currentWeek]);
-const getMealForSlot = (date, mealType) => {
-    if (!weekPlan?.meals) return null;
-    const dateString = dateToString(date);
-    const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
-    if (!dayMeals || !dayMeals[mealType]) return null;
-    return dayMeals[mealType];
-  };
 
   // Handle drag start
   function handleDragStart(event) {
     setActiveId(event.active.id)
   }
-  
-  // Handle drag and drop
+
+  // Handle drag end
   async function handleDragEnd(event) {
-    const { active, over } = event
+    const { active, over } = event;
+    setActiveId(null);
     
-    setActiveId(null)
+    if (!over || !active?.id) return;
     
-    if (!over) return
+    const mealId = parseInt(active.id);
+    if (isNaN(mealId) || !meals) return;
     
-    // Parse the droppable ID to get date and meal type
-    const [date, mealType] = over.id.split('-')
-    const mealId = parseInt(active.id)
+    const currentMeal = meals.find(meal => 
+      (meal?.Id === mealId) || (meal?.id === mealId)
+    );
+    if (!currentMeal) return;
+    
+    const [dateString, mealType] = over.id.split('-');
+    if (!dateString || !mealType) return;
+    
+    // Parse date from dateString
+    const date = new Date(dateString);
     
     // Don't do anything if dropped on same slot that already contains this meal
-    const currentMeal = getMealForSlot(date, mealType)
-    if (currentMeal && currentMeal.Id === mealId) {
-      return
+    const existingMeal = getMealForSlot(date, mealType);
+    if (existingMeal && (existingMeal.Id === mealId || existingMeal.id === mealId)) {
+      return;
     }
     
     try {
-      const updatedPlan = await weekPlanService.addMealToPlan(currentWeek, date, mealType, mealId)
-      setWeekPlan(updatedPlan)
-      toast.success('Meal added to plan!')
+      const updatedPlan = await weekPlanService.addMealToPlan(currentWeek, date, mealType, mealId);
+      setWeekPlan(updatedPlan);
+      toast.success('Meal added to plan!');
     } catch (error) {
-      console.error('Error adding meal to plan:', error)
-      toast.error('Failed to add meal to plan')
+      console.error('Error adding meal to plan:', error);
+      toast.error('Failed to add meal to plan');
     }
   }
   

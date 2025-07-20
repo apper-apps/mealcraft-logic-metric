@@ -111,13 +111,21 @@ const handleAddMeal = () => {
   }
   
   // Filter meals based on search
-  const filteredMeals = meals.filter(meal =>
-    meal.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meal.Category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meal.Ingredients.some(ingredient => 
-      ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  )
+const filteredMeals = meals.filter(meal => {
+    if (!meal) return false;
+    
+    const mealName = meal.name || meal.Name || '';
+    const mealCategory = meal.category || meal.Category || '';
+    const mealIngredients = meal.ingredients || meal.Ingredients || [];
+    
+    return (
+      mealName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mealCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mealIngredients.some(ingredient => 
+        ingredient?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) || false
+      )
+    );
+  });
   
   // Create draggable component for meal cards
   function DraggableMeal({ meal, index }) {

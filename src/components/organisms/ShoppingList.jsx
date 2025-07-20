@@ -1,44 +1,60 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
-import Badge from "@/components/atoms/Badge";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
-import { consolidateIngredients, getMealsForWeek } from "@/utils/mealUtils";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
 import { weekPlanService } from "@/services/api/weekPlanService";
+import { consolidateIngredients, getMealsForWeek } from "@/utils/mealUtils";
 
 const ShoppingList = ({ 
   currentWeek, 
   meals = [],
   className = "" 
 }) => {
-  const [weekPlan, setWeekPlan] = useState(null);
+const [weekPlan, setWeekPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkedItems, setCheckedItems] = useState(new Set());
-
-  useEffect(() => {
-    loadWeekPlan();
-  }, [currentWeek]);
+  const [ingredients, setIngredients] = useState([]);
 
   const loadWeekPlan = async () => {
     try {
       setLoading(true);
-      setError("");
+      setError(null);
       const plan = await weekPlanService.getWeekPlan(currentWeek);
       setWeekPlan(plan);
+      
+      if (plan?.meals && meals && Array.isArray(meals)) {
+        const weekMeals = getMealsForWeek(plan.meals, meals);
+        if (weekMeals && weekMeals.length > 0) {
+          const consolidatedIngredients = consolidateIngredients(weekMeals);
+          setIngredients(consolidatedIngredients || []);
+        } else {
+          setIngredients([]);
+        }
+      } else {
+        setIngredients([]);
+      }
     } catch (err) {
-      setError("Failed to load shopping list");
-      console.error(err);
+      console.error('Failed to load week plan:', err);
+      setError(err.message || 'Failed to load shopping list');
+      setIngredients([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const weekMeals = getMealsForWeek(weekPlan, meals);
-  const consolidatedIngredients = consolidateIngredients(weekMeals);
+  useEffect(() => {
+    if (currentWeek) {
+      loadWeekPlan();
+    }
+  }, [currentWeek]);
+
+const weekMeals = weekPlan?.meals ? getMealsForWeek(weekPlan.meals, meals) : [];
+  const consolidatedIngredients = ingredients;
 
   const toggleItemCheck = (index) => {
     const newChecked = new Set(checkedItems);
@@ -54,11 +70,14 @@ const ShoppingList = ({
     setCheckedItems(new Set());
   };
 
-  const printList = () => {
-    const printContent = consolidatedIngredients
-      .map(ingredient => `• ${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`)
-      .join("\n");
+const printList = () => {
+    if (!consolidatedIngredients || consolidatedIngredients.length === 0) {
+      return;
+    }
     
+    const printContent = consolidatedIngredients
+      .map(ingredient => `• ${ingredient.quantity || ''} ${ingredient.unit || ''} ${ingredient.name || 'Unknown ingredient'}`)
+      .join("\n");
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`
       <html>

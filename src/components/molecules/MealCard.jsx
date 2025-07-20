@@ -1,17 +1,18 @@
 import { motion } from "framer-motion";
+import React from "react";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import { formatPrepTime } from "@/utils/mealUtils";
 
-const MealCard = ({ 
+function MealCard({ 
   meal, 
   onEdit, 
   onDelete, 
-  isDragging = false,
   className = "",
   showActions = true,
+  isDragging = false,
   ...props 
-}) => {
+}) {
   if (!meal) return null;
 
   return (
