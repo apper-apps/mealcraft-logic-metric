@@ -37,13 +37,83 @@ export const weekPlanService = {
     let weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
     
     if (!weekPlan) {
-      weekPlan = createEmptyWeekPlan(weekStart);
+weekPlan = createEmptyWeekPlan(weekStart);
       weekPlans.push(weekPlan);
+    }
+    
+    // Convert meals array to object format for calendar compatibility
+    if (weekPlan.meals && Array.isArray(weekPlan.meals)) {
+      const mealsObject = {};
+      weekPlan.meals.forEach(dayMeal => {
+        if (dayMeal && dayMeal.date) {
+          mealsObject[dayMeal.date] = {
+            breakfast: dayMeal.breakfast,
+            lunch: dayMeal.lunch,
+            dinner: dayMeal.dinner
+          };
+        }
+      });
+      weekPlan = {
+        ...weekPlan,
+        meals: mealsObject
+      };
     }
     
     return { ...weekPlan };
   },
 
+  async addMealToPlan(weekStart, date, mealType, mealId) {
+    await delay();
+    const dateString = typeof date === 'string' ? date : dateToString(date);
+    const weekStartString = dateToString(getWeekStart(weekStart));
+    
+    let weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
+    
+    if (!weekPlan) {
+      weekPlan = createEmptyWeekPlan(weekStart);
+      weekPlans.push(weekPlan);
+    }
+    
+    // Ensure meals is an array for storage
+    if (!Array.isArray(weekPlan.meals)) {
+      // Convert object format back to array format for storage
+      const mealsArray = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(getWeekStart(weekStart));
+        date.setDate(date.getDate() + i);
+        const dateStr = dateToString(date);
+        mealsArray.push({
+          date: dateStr,
+          breakfast: weekPlan.meals[dateStr]?.breakfast || null,
+          lunch: weekPlan.meals[dateStr]?.lunch || null,
+          dinner: weekPlan.meals[dateStr]?.dinner || null
+        });
+      }
+      weekPlan.meals = mealsArray;
+    }
+    
+    const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
+    if (dayMeals) {
+      dayMeals[mealType] = mealId.toString();
+    }
+    
+    // Convert back to object format for return
+    const mealsObject = {};
+    weekPlan.meals.forEach(dayMeal => {
+      if (dayMeal && dayMeal.date) {
+        mealsObject[dayMeal.date] = {
+          breakfast: dayMeal.breakfast,
+          lunch: dayMeal.lunch,
+          dinner: dayMeal.dinner
+        };
+      }
+    });
+    
+    return {
+      ...weekPlan,
+      meals: mealsObject
+    };
+  },
   async assignMeal(weekStart, dateString, mealType, mealId) {
     await delay();
     const weekStartString = dateToString(getWeekStart(weekStart));
