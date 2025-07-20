@@ -100,17 +100,25 @@
   }
 }
 
-@media (min-width: 1280px) and (max-width: 1535px) {
+@media (min-width: 769px) and (max-width: 1279px) {
   .calendar-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
 }
 
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .calendar-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+}
+
 @media (min-width: 1536px) {
   .calendar-grid {
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.75rem;
+    max-width: calc(100vw - 400px);
   }
 }
 @media (max-width: 768px) {
@@ -140,11 +148,14 @@
 .premium-card {
   @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
   min-height: 120px;
+  margin: 0.5rem 0;
 }
+
 .empty-slot {
   @apply h-32 flex items-center justify-center text-muted-foreground;
   @apply bg-gradient-to-br from-secondary/[0.15] to-accent/[0.15] border-secondary border-2 border-dashed shadow-lg;
   @apply rounded-lg transition-all duration-200 hover:border-secondary/70;
+  min-height: 128px;
 }
 .shimmer {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);

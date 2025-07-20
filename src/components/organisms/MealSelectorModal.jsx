@@ -130,21 +130,21 @@ const MealSelectorModal = ({ isOpen, onClose, onSelectMeal, date, mealType }) =>
                 message={searchTerm ? "Try adjusting your search terms" : "Create some meals first"}
                 actionLabel="Clear Search"
                 onAction={() => setSearchTerm("")}
-              />
+/>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
                 <AnimatePresence>
                   {filteredMeals.map((meal, index) => (
                     <motion.div
                       key={meal.Id}
                       initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.05 }}
-                      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-secondary/20 transition-all duration-200 cursor-pointer group"
+                      className="bg-white rounded-xl border border-gray-200 p-3 lg:p-4 hover:shadow-lg hover:border-secondary/20 transition-all duration-200 cursor-pointer group min-h-[140px] flex flex-col"
                       onClick={() => handleSelectMeal(meal)}
                     >
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-gray-900 group-hover:text-secondary transition-colors">
                           {meal.name || meal.Name}
                         </h3>

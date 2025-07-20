@@ -7,8 +7,8 @@ import { CSS } from "@dnd-kit/utilities";
 import ApperIcon from "@/components/ApperIcon";
 import Error from "@/components/ui/Error";
 import Loading from "@/components/ui/Loading";
-import MealSlot from "@/components/molecules/MealSlot";
 import MealSelectorModal from "@/components/organisms/MealSelectorModal";
+import MealSlot from "@/components/molecules/MealSlot";
 import WeekNavigation from "@/components/molecules/WeekNavigation";
 import { weekPlanService } from "@/services/api/weekPlanService";
 import { dateToString, formatDate, getNextWeek, getPreviousWeek, getWeekDays, getWeekStart } from "@/utils/date";
@@ -102,10 +102,17 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
       return;
     }
     
-    try {
+try {
       const updatedPlan = await weekPlanService.addMealToPlan(currentWeek, date, mealType, mealId);
       setWeekPlan(updatedPlan);
       toast.success('Meal added to plan!');
+      
+      // Trigger shopping list update
+      if (typeof window !== 'undefined' && window.CustomEvent) {
+        window.dispatchEvent(new CustomEvent('mealPlanUpdated', { 
+          detail: { weekPlan: updatedPlan, currentWeek } 
+        }));
+      }
     } catch (error) {
       console.error('Error adding meal to plan:', error);
       toast.error('Failed to add meal to plan');
@@ -142,8 +149,7 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
   // Handle meal selection from modal
   const handleMealSelected = async (meal) => {
     if (!selectedSlot.date || !selectedSlot.mealType) return;
-    
-    try {
+try {
       const mealId = meal.Id || meal.id;
       const updatedPlan = await weekPlanService.addMealToPlan(
         currentWeek, 
@@ -152,6 +158,13 @@ export default function MealPlanCalendar({ meals, currentWeek, onWeekChange }) {
         mealId
       );
       setWeekPlan(updatedPlan);
+      
+      // Trigger shopping list update by dispatching a custom event
+      if (typeof window !== 'undefined' && window.CustomEvent) {
+        window.dispatchEvent(new CustomEvent('mealPlanUpdated', { 
+          detail: { weekPlan: updatedPlan, currentWeek } 
+        }));
+      }
     } catch (error) {
       console.error('Error adding meal to plan:', error);
       toast.error('Failed to add meal to plan');
@@ -212,10 +225,7 @@ if (loading) {
         onPrevious={handlePreviousWeek}
         onNext={handleNextWeek}
         onToday={handleToday}
-      />
-      
-      {loading && <Loading />}
-      {error && <Error message={error} onRetry={loadWeekPlan} />}
+/>
       
       {!loading && !error && (
         <DndContext
@@ -257,11 +267,11 @@ if (loading) {
                           items={[]}
                           strategy={verticalListSortingStrategy}
                         >
-                          <DroppableSlot
+<DroppableSlot
                             id={droppableId}
                             className="group"
                           >
-<MealSlot
+                            <MealSlot
                               mealType={mealType}
                               meal={meal}
                               onRemove={() => handleRemoveMeal(day, mealType)}

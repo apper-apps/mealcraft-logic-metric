@@ -46,13 +46,34 @@ const [weekPlan, setWeekPlan] = useState(null);
       setLoading(false);
     }
   };
-
-  useEffect(() => {
+useEffect(() => {
     if (currentWeek) {
       loadWeekPlan();
     }
-  }, [currentWeek]);
+  }, [currentWeek, meals]);
 
+  // Listen for meal plan updates from calendar
+  useEffect(() => {
+    const handleMealPlanUpdate = (event) => {
+      const { weekPlan: updatedPlan, currentWeek: eventWeek } = event.detail;
+      if (eventWeek === currentWeek && updatedPlan) {
+        setWeekPlan(updatedPlan);
+        
+        if (updatedPlan?.meals && meals && Array.isArray(meals)) {
+          const weekMeals = getMealsForWeek(updatedPlan.meals, meals);
+          if (weekMeals && weekMeals.length > 0) {
+            const consolidatedIngredients = consolidateIngredients(weekMeals);
+            setIngredients(consolidatedIngredients || []);
+          } else {
+            setIngredients([]);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('mealPlanUpdated', handleMealPlanUpdate);
+    return () => window.removeEventListener('mealPlanUpdated', handleMealPlanUpdate);
+  }, [currentWeek, meals]);
 const weekMeals = weekPlan?.meals ? getMealsForWeek(weekPlan.meals, meals) : [];
   const consolidatedIngredients = ingredients;
 
