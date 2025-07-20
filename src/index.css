@@ -91,12 +91,30 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 1rem;
 }
+
+/* Responsive calendar grid to prevent meal library overlap */
 @media (max-width: 768px) {
   .calendar-grid {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .calendar-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .calendar-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
   /* Enhanced mobile touch targets for meals */
   .premium-card {
     @apply min-h-[80px] touch-manipulation;

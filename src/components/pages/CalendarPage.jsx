@@ -1,11 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MealPlanCalendar from "@/components/organisms/MealPlanCalendar";
 import MealsList from "@/components/organisms/MealsList";
 import { getWeekStart } from "@/utils/date";
+import { mealService } from "@/services/api/mealService";
 
 const CalendarPage = () => {
   const [currentWeek, setCurrentWeek] = useState(getWeekStart(new Date()));
+  const [meals, setMeals] = useState([]);
+
+  useEffect(() => {
+    const loadMeals = async () => {
+      try {
+        const data = await mealService.getAll();
+        setMeals(data);
+      } catch (error) {
+        console.error('Failed to load meals:', error);
+      }
+    };
+
+    loadMeals();
+  }, []);
 
   return (
     <motion.div
@@ -23,6 +38,7 @@ const CalendarPage = () => {
 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2">
           <MealPlanCalendar 
+            meals={meals}
             currentWeek={currentWeek}
             onWeekChange={setCurrentWeek}
           />
