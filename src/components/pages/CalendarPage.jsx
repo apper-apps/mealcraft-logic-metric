@@ -35,8 +35,8 @@ const CalendarPage = () => {
         </p>
       </div>
 
-<div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2">
+<div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div className="xl:col-span-2 2xl:col-span-3 2xl:col-start-1">
           <MealPlanCalendar 
             meals={meals}
             currentWeek={currentWeek}
@@ -44,7 +44,7 @@ const CalendarPage = () => {
           />
         </div>
         
-        <div className="xl:col-span-1">
+        <div className="xl:col-span-2 2xl:col-span-1 2xl:col-start-4">
           <div className="sticky top-6">
             <MealsList />
           </div>
