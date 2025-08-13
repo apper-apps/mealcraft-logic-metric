@@ -1,35 +1,38 @@
-import { motion } from "framer-motion";
-import ApperIcon from "@/components/ApperIcon";
+import { motion } from 'framer-motion';
+import { useContext } from 'react';
+import ApperIcon from '@/components/ApperIcon';
+import Button from '@/components/atoms/Button';
+import { AuthContext } from '../../App';
 
-const Header = ({ className = "" }) => {
+function Header({ className = "" }) {
+  const { logout } = useContext(AuthContext);
+
   return (
     <motion.header
-      initial={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`bg-white border-b border-gray-200 ${className}`}
+      className={`bg-white border-b border-gray-200 px-6 py-4 ${className}`}
     >
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
-              <ApperIcon name="UtensilsCrossed" size={24} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold gradient-text">MealCraft</h1>
-              <p className="text-sm text-gray-600">Smart meal planning made simple</p>
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+            <ApperIcon name="UtensilsCrossed" size={20} className="text-white" />
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">Welcome back!</p>
-              <p className="text-xs text-gray-600">Plan your perfect week</p>
-            </div>
-          </div>
+          <h1 className="text-lg font-bold gradient-text">MealCraft</h1>
         </div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={logout}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ApperIcon name="LogOut" size={16} />
+          Logout
+        </Button>
       </div>
     </motion.header>
   );
-};
+}
 
 export default Header;

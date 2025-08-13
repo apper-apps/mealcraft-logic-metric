@@ -1,10 +1,13 @@
-import weekPlansData from "@/services/mockData/weekPlans.json";
 import { dateToString, getWeekStart } from "@/utils/date";
 
-// Create a copy of the data to avoid mutations
-let weekPlans = [...weekPlansData];
+const { ApperClient } = window.ApperSDK;
 
-const delay = (ms = 250) => new Promise(resolve => setTimeout(resolve, ms));
+const apperClient = new ApperClient({
+  apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+  apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+});
+
+const TABLE_NAME = 'week_plan_c';
 
 const createEmptyWeekPlan = (weekStart) => {
   const weekStartDate = getWeekStart(weekStart);
@@ -23,28 +26,152 @@ const createEmptyWeekPlan = (weekStart) => {
   }
 
   return {
-    Id: Math.max(...weekPlans.map(wp => wp.Id), 0) + 1,
-    weekStart: weekStartString,
-    meals
+    Name: `Week of ${weekStartString}`,
+    week_start_c: weekStartString,
+    meals_c: JSON.stringify(meals)
   };
 };
 
 export const weekPlanService = {
   async getWeekPlan(weekStart) {
-    await delay();
-    const weekStartString = dateToString(getWeekStart(weekStart));
-    
-    let weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
-    
-    if (!weekPlan) {
-weekPlan = createEmptyWeekPlan(weekStart);
-      weekPlans.push(weekPlan);
-    }
-    
-    // Convert meals array to object format for calendar compatibility
-    if (weekPlan.meals && Array.isArray(weekPlan.meals)) {
+    try {
+      const weekStartString = dateToString(getWeekStart(weekStart));
+      
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "week_start_c" } },
+          { field: { Name: "meals_c" } }
+        ],
+        where: [
+          {
+            FieldName: "week_start_c",
+            Operator: "EqualTo",
+            Values: [weekStartString]
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords(TABLE_NAME, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      let weekPlan;
+      
+      if (!response.data || response.data.length === 0) {
+        // Create new week plan
+        const newPlanData = createEmptyWeekPlan(weekStart);
+        const createParams = {
+          records: [newPlanData]
+        };
+        
+        const createResponse = await apperClient.createRecord(TABLE_NAME, createParams);
+        
+        if (!createResponse.success) {
+          throw new Error(createResponse.message);
+        }
+        
+        if (createResponse.results && createResponse.results[0]?.success) {
+          weekPlan = createResponse.results[0].data;
+        } else {
+          throw new Error('Failed to create week plan');
+        }
+      } else {
+        weekPlan = response.data[0];
+      }
+
+      // Parse meals_c from JSON string
+      let meals = [];
+      try {
+        if (weekPlan.meals_c) {
+          meals = JSON.parse(weekPlan.meals_c);
+        }
+      } catch (e) {
+        console.error('Error parsing meals_c:', e);
+        meals = [];
+      }
+
+      // Convert meals array to object format for calendar compatibility
       const mealsObject = {};
-      weekPlan.meals.forEach(dayMeal => {
+      if (Array.isArray(meals)) {
+        meals.forEach(dayMeal => {
+          if (dayMeal && dayMeal.date) {
+            mealsObject[dayMeal.date] = {
+              breakfast: dayMeal.breakfast,
+              lunch: dayMeal.lunch,
+              dinner: dayMeal.dinner
+            };
+          }
+        });
+      }
+      
+      return {
+        ...weekPlan,
+        weekStart: weekPlan.week_start_c,
+        meals: mealsObject
+      };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error fetching week plan:", error?.response?.data?.message);
+        throw new Error(error.response.data.message);
+      } else {
+        console.error("Error fetching week plan:", error.message);
+        throw error;
+      }
+    }
+  },
+
+  async addMealToPlan(weekStart, date, mealType, mealId) {
+    try {
+      const dateString = typeof date === 'string' ? date : dateToString(date);
+      const weekStartString = dateToString(getWeekStart(weekStart));
+      
+      // Get existing week plan
+      const weekPlan = await this.getWeekPlan(weekStart);
+      
+      // Convert meals object back to array for storage
+      const mealsArray = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(getWeekStart(weekStart));
+        date.setDate(date.getDate() + i);
+        const dateStr = dateToString(date);
+        const existingMeals = weekPlan.meals[dateStr] || {};
+        mealsArray.push({
+          date: dateStr,
+          breakfast: existingMeals.breakfast || null,
+          lunch: existingMeals.lunch || null,
+          dinner: existingMeals.dinner || null
+        });
+      }
+      
+      // Update the specific meal
+      const dayMeals = mealsArray.find(dm => dm.date === dateString);
+      if (dayMeals) {
+        dayMeals[mealType] = mealId.toString();
+      }
+
+      const params = {
+        records: [
+          {
+            Id: weekPlan.Id,
+            meals_c: JSON.stringify(mealsArray)
+          }
+        ]
+      };
+
+      const response = await apperClient.updateRecord(TABLE_NAME, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      // Convert back to object format for return
+      const mealsObject = {};
+      mealsArray.forEach(dayMeal => {
         if (dayMeal && dayMeal.date) {
           mealsObject[dayMeal.date] = {
             breakfast: dayMeal.breakfast,
@@ -53,128 +180,165 @@ weekPlan = createEmptyWeekPlan(weekStart);
           };
         }
       });
-      weekPlan = {
+      
+      return {
         ...weekPlan,
         meals: mealsObject
       };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error adding meal to plan:", error?.response?.data?.message);
+        throw new Error(error.response.data.message);
+      } else {
+        console.error("Error adding meal to plan:", error.message);
+        throw error;
+      }
     }
-    
-    return { ...weekPlan };
   },
 
-  async addMealToPlan(weekStart, date, mealType, mealId) {
-    await delay();
-    const dateString = typeof date === 'string' ? date : dateToString(date);
-    const weekStartString = dateToString(getWeekStart(weekStart));
-    
-    let weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
-    
-    if (!weekPlan) {
-      weekPlan = createEmptyWeekPlan(weekStart);
-      weekPlans.push(weekPlan);
-    }
-    
-    // Ensure meals is an array for storage
-    if (!Array.isArray(weekPlan.meals)) {
-      // Convert object format back to array format for storage
+  async removeMeal(weekStart, dateString, mealType) {
+    try {
+      // Get existing week plan
+      const weekPlan = await this.getWeekPlan(weekStart);
+      
+      // Convert meals object back to array for storage
       const mealsArray = [];
       for (let i = 0; i < 7; i++) {
         const date = new Date(getWeekStart(weekStart));
         date.setDate(date.getDate() + i);
         const dateStr = dateToString(date);
+        const existingMeals = weekPlan.meals[dateStr] || {};
         mealsArray.push({
           date: dateStr,
-          breakfast: weekPlan.meals[dateStr]?.breakfast || null,
-          lunch: weekPlan.meals[dateStr]?.lunch || null,
-          dinner: weekPlan.meals[dateStr]?.dinner || null
+          breakfast: existingMeals.breakfast || null,
+          lunch: existingMeals.lunch || null,
+          dinner: existingMeals.dinner || null
         });
       }
-      weekPlan.meals = mealsArray;
-    }
-    
-    const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
-    if (dayMeals) {
-      dayMeals[mealType] = mealId.toString();
-    }
-    
-    // Convert back to object format for return
-    const mealsObject = {};
-    weekPlan.meals.forEach(dayMeal => {
-      if (dayMeal && dayMeal.date) {
-        mealsObject[dayMeal.date] = {
-          breakfast: dayMeal.breakfast,
-          lunch: dayMeal.lunch,
-          dinner: dayMeal.dinner
-        };
+      
+      // Remove the specific meal
+      const dayMeals = mealsArray.find(dm => dm.date === dateString);
+      if (dayMeals) {
+        dayMeals[mealType] = null;
       }
-    });
-    
-    return {
-      ...weekPlan,
-      meals: mealsObject
-    };
-  },
-  async assignMeal(weekStart, dateString, mealType, mealId) {
-    await delay();
-    const weekStartString = dateToString(getWeekStart(weekStart));
-    
-    let weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
-    
-    if (!weekPlan) {
-      weekPlan = createEmptyWeekPlan(weekStart);
-      weekPlans.push(weekPlan);
-    }
-    
-    const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
-    if (dayMeals) {
-      dayMeals[mealType] = mealId.toString();
-    }
-    
-    return { ...weekPlan };
-  },
 
-  async removeMeal(weekStart, dateString, mealType) {
-    await delay();
-    const weekStartString = dateToString(getWeekStart(weekStart));
-    
-    const weekPlan = weekPlans.find(wp => wp.weekStart === weekStartString);
-    if (!weekPlan) {
-      throw new Error("Week plan not found");
+      const params = {
+        records: [
+          {
+            Id: weekPlan.Id,
+            meals_c: JSON.stringify(mealsArray)
+          }
+        ]
+      };
+
+      const response = await apperClient.updateRecord(TABLE_NAME, params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        throw new Error(response.message);
+      }
+
+      // Convert back to object format for return
+      const mealsObject = {};
+      mealsArray.forEach(dayMeal => {
+        if (dayMeal && dayMeal.date) {
+          mealsObject[dayMeal.date] = {
+            breakfast: dayMeal.breakfast,
+            lunch: dayMeal.lunch,
+            dinner: dayMeal.dinner
+          };
+        }
+      });
+      
+      return {
+        ...weekPlan,
+        meals: mealsObject
+      };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error removing meal from plan:", error?.response?.data?.message);
+        throw new Error(error.response.data.message);
+      } else {
+        console.error("Error removing meal from plan:", error.message);
+        throw error;
+      }
     }
-    
-    const dayMeals = weekPlan.meals.find(dm => dm.date === dateString);
-    if (dayMeals) {
-      dayMeals[mealType] = null;
-    }
-    
-    return { ...weekPlan };
   },
 
   async copyWeek(fromWeekStart, toWeekStart) {
-    await delay();
-    const fromWeekString = dateToString(getWeekStart(fromWeekStart));
-    const toWeekString = dateToString(getWeekStart(toWeekStart));
-    
-    const sourceWeekPlan = weekPlans.find(wp => wp.weekStart === fromWeekString);
-    if (!sourceWeekPlan) {
-      throw new Error("Source week plan not found");
-    }
-    
-    let targetWeekPlan = weekPlans.find(wp => wp.weekStart === toWeekString);
-    if (!targetWeekPlan) {
-      targetWeekPlan = createEmptyWeekPlan(toWeekStart);
-      weekPlans.push(targetWeekPlan);
-    }
-    
-    // Copy meal assignments
-    sourceWeekPlan.meals.forEach((sourceDayMeals, index) => {
-      if (targetWeekPlan.meals[index]) {
-        targetWeekPlan.meals[index].breakfast = sourceDayMeals.breakfast;
-        targetWeekPlan.meals[index].lunch = sourceDayMeals.lunch;
-        targetWeekPlan.meals[index].dinner = sourceDayMeals.dinner;
+    try {
+      const fromWeekPlan = await this.getWeekPlan(fromWeekStart);
+      const toWeekStartString = dateToString(getWeekStart(toWeekStart));
+      
+      // Create meals array for the target week
+      const mealsArray = [];
+      for (let i = 0; i < 7; i++) {
+        const sourceDate = new Date(getWeekStart(fromWeekStart));
+        sourceDate.setDate(sourceDate.getDate() + i);
+        const sourceDateStr = dateToString(sourceDate);
+        
+        const targetDate = new Date(getWeekStart(toWeekStart));
+        targetDate.setDate(targetDate.getDate() + i);
+        const targetDateStr = dateToString(targetDate);
+        
+        const sourceMeals = fromWeekPlan.meals[sourceDateStr] || {};
+        mealsArray.push({
+          date: targetDateStr,
+          breakfast: sourceMeals.breakfast || null,
+          lunch: sourceMeals.lunch || null,
+          dinner: sourceMeals.dinner || null
+        });
       }
-    });
-    
-    return { ...targetWeekPlan };
+
+      // Create or update target week plan
+      const newPlanData = {
+        Name: `Week of ${toWeekStartString}`,
+        week_start_c: toWeekStartString,
+        meals_c: JSON.stringify(mealsArray)
+      };
+
+      const createParams = {
+        records: [newPlanData]
+      };
+      
+      const response = await apperClient.createRecord(TABLE_NAME, createParams);
+      
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      
+      let targetWeekPlan;
+      if (response.results && response.results[0]?.success) {
+        targetWeekPlan = response.results[0].data;
+      } else {
+        throw new Error('Failed to copy week plan');
+      }
+
+      // Convert back to object format for return
+      const mealsObject = {};
+      mealsArray.forEach(dayMeal => {
+        if (dayMeal && dayMeal.date) {
+          mealsObject[dayMeal.date] = {
+            breakfast: dayMeal.breakfast,
+            lunch: dayMeal.lunch,
+            dinner: dayMeal.dinner
+          };
+        }
+      });
+      
+      return {
+        ...targetWeekPlan,
+        weekStart: targetWeekPlan.week_start_c,
+        meals: mealsObject
+      };
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        console.error("Error copying week plan:", error?.response?.data?.message);
+        throw new Error(error.response.data.message);
+      } else {
+        console.error("Error copying week plan:", error.message);
+        throw error;
+      }
+    }
   }
 };

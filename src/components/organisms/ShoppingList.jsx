@@ -217,9 +217,9 @@ const printList = () => {
             This Week's Meals
           </h3>
           <div className="flex flex-wrap gap-2">
-            {weekMeals.map((meal, index) => (
+{weekMeals.map((meal, index) => (
               <Badge key={`${meal.Id}-${index}`} variant="secondary" size="sm">
-                {meal.name}
+                {meal.Name}
               </Badge>
             ))}
           </div>
