@@ -1,12 +1,17 @@
-import { useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { useContext } from 'react';
 import { AuthContext } from '../../App';
 
 function Login() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { isInitialized } = useContext(AuthContext);
   
   useEffect(() => {
     if (isInitialized) {
+      // Show login UI in this component
       const { ApperUI } = window.ApperSDK;
       ApperUI.showLogin("#authentication");
     }
@@ -14,7 +19,7 @@ function Login() {
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-lg shadow-md">
+      <div className="w-full max-w-md space-y-8 p-8 bg-surface rounded-lg shadow-md">
         <div className="flex flex-col gap-6 items-center justify-center">
           <div className="w-14 h-14 shrink-0 rounded-xl flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white text-2xl 2xl:text-3xl font-bold">
             M
@@ -23,14 +28,14 @@ function Login() {
             <div className="text-center text-lg xl:text-xl font-bold">
               Sign in to MealCraft
             </div>
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-sm text-muted">
               Welcome back, please sign in to continue
             </div>
           </div>
         </div>
         <div id="authentication" />
         <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted">
             Don't have an account?{' '}
             <Link to="/signup" className="font-medium text-primary hover:text-secondary">
               Sign up

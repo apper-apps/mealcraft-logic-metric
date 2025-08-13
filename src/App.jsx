@@ -1,29 +1,31 @@
-import React, { createContext, useEffect, useState } from "react";
-import { Route, Router, Routes, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { clearUser, setUser } from "./store/userSlice";
-import Login from "@/components/pages/Login";
-import Signup from "@/components/pages/Signup";
-import Callback from "@/components/pages/Callback";
-import ErrorPage from "@/components/pages/ErrorPage";
-import ResetPassword from "@/components/pages/ResetPassword";
-import PromptPassword from "@/components/pages/PromptPassword";
-import Layout from "@/components/organisms/Layout";
-import ShoppingPage from "@/components/pages/ShoppingPage";
-import CalendarPage from "@/components/pages/CalendarPage";
-import MealsPage from "@/components/pages/MealsPage";
+import { createContext, useEffect, useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser, clearUser } from './store/userSlice';
+import Login from '@/components/pages/Login';
+import Signup from '@/components/pages/Signup';
+import Callback from '@/components/pages/Callback';
+import ErrorPage from '@/components/pages/ErrorPage';
+import ResetPassword from '@/components/pages/ResetPassword';
+import PromptPassword from '@/components/pages/PromptPassword';
+import MealsPage from '@/components/pages/MealsPage';
+import CalendarPage from '@/components/pages/CalendarPage';
+import ShoppingPage from '@/components/pages/ShoppingPage';
+import Layout from '@/components/organisms/Layout';
 
+// Create auth context
 export const AuthContext = createContext(null);
 
-function AppContent() {
+function App() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isInitialized, setIsInitialized] = useState(false);
   
+  // Get authentication status with proper error handling
   const userState = useSelector((state) => state.user);
   const isAuthenticated = userState?.isAuthenticated || false;
   
+  // Initialize ApperUI once when the app loads
   useEffect(() => {
     const { ApperClient, ApperUI } = window.ApperSDK;
     
@@ -32,12 +34,15 @@ function AppContent() {
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
     
+    // Initialize but don't show login yet
     ApperUI.setup(client, {
       target: '#authentication',
       clientId: import.meta.env.VITE_APPER_PROJECT_ID,
       view: 'both',
       onSuccess: function (user) {
         setIsInitialized(true);
+        // CRITICAL: This exact currentPath logic must be preserved in all implementations
+        // DO NOT simplify or modify this pattern as it ensures proper redirection flow
         let currentPath = window.location.pathname + window.location.search;
         let redirectPath = new URLSearchParams(window.location.search).get('redirect');
         const isAuthPage = currentPath.includes('/login') || currentPath.includes('/signup') || 
@@ -45,19 +50,22 @@ function AppContent() {
                            currentPath.includes('/prompt-password') || currentPath.includes('/reset-password');
         
         if (user) {
+          // User is authenticated
           if (redirectPath) {
             navigate(redirectPath);
           } else if (!isAuthPage) {
             if (!currentPath.includes('/login') && !currentPath.includes('/signup')) {
               navigate(currentPath);
             } else {
-              navigate('/');
+              navigate('/meals');
             }
           } else {
-            navigate('/');
+            navigate('/meals');
           }
+          // Store user information in Redux
           dispatch(setUser(JSON.parse(JSON.stringify(user))));
         } else {
+          // User is not authenticated
           if (!isAuthPage) {
             navigate(
               currentPath.includes('/signup')
@@ -86,8 +94,9 @@ function AppContent() {
         console.error("Authentication failed:", error);
       }
     });
-  }, []);
+  }, []); // No props and state should be bound
   
+  // Authentication methods to share via context
   const authMethods = {
     isInitialized,
     logout: async () => {
@@ -102,6 +111,7 @@ function AppContent() {
     }
   };
   
+  // Don't render routes until initialization is complete
   if (!isInitialized) {
     return <div className="loading flex items-center justify-center p-6 h-full w-full"><svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" ><path d="M12 2v4"></path><path d="m16.2 7.8 2.9-2.9"></path><path d="M18 12h4"></path><path d="m16.2 16.2 2.9 2.9"></path><path d="M12 18v4"></path><path d="m4.9 19.1 2.9-2.9"></path><path d="M2 12h4"></path><path d="m4.9 4.9 2.9 2.9"></path></svg></div>;
   }
@@ -116,36 +126,13 @@ function AppContent() {
         <Route path="/prompt-password/:appId/:emailAddress/:provider" element={<PromptPassword />} />
         <Route path="/reset-password/:appId/:fields" element={<ResetPassword />} />
         <Route path="/" element={<Layout />}>
-          <Route index element={<CalendarPage />} />
+          <Route index element={<MealsPage />} />
           <Route path="meals" element={<MealsPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="shopping" element={<ShoppingPage />} />
         </Route>
       </Routes>
-      
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        style={{ zIndex: 9999 }}
-      />
     </AuthContext.Provider>
-  );
-}
-
-function App() {
-  return (
-    <Router>
-      <div className="App">
-        <AppContent />
-      </div>
-    </Router>
   );
 }
 
